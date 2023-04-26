@@ -2,6 +2,9 @@
 .idea
 myvenv/
 .gitignore
+docker-compose.yml
+.env
+
 
 ### tamplates =
 

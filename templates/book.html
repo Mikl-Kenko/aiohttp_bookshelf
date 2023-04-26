@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,13 +11,13 @@
 
         body {
             min-height: 100vh;
-            background: linear-gradient(#a6f959, #65f9f1) no-repeat;
+            background: -webkit-linear-gradient(#3f5e95,#00afb7,#c4ec8e);
+            background: linear-gradient(#3f5e95,#00afb7,#c4ec8e);
         }
 
-        h1 {
+        h1, h2 {
             text-align: center;
-            color: white;
-            text-shadow: 0 2px 5px rgba(150, 150, 150, 0.8);
+            color: rgb(47, 180, 14);
         }
 
         #root {
@@ -112,23 +113,81 @@
     </style>
 </head>
 <body>
+    <button class="form__button" onclick= "document.location='/'""> Return to Bookshelf</button>
+
+    <h1>Book "{{title}}"</h1>
+    <h2> Author: {{ context.author }}, {{ context.page }} pages</h2>
 <div>
-    <h1>{{title}}</h1>
     <div id="root">
         <div class="form">
             <input id="message_text" class="form__input" type="text"
-                   placeholder="Введите свой отзыв на книгу..."/>
-            <div class="form__button" onclick="sendMessage()">Отправить</div>
-        </div>
+                   placeholder="Enter your comment on the book..."/>
+            <div class="form__button" onclick="sendMessage()">Send comment</div>
+        </div><br>
+        <h3>Comments about book "{{title}}":</h3>
         <div id="messages">
-
         </div>
     </div>
 </div>
 </body>
 <script type="application/javascript">
+    const root = document.getElementById("messages");
+    const messageTextInput = document.getElementById("message_text");
+
+    let can_send_message = true;
+    let book_id = `{{context.id}}`;
+    let messages = [];
+    const renderMessage = ({text, at_created}) => {
+        let message = document.createElement("div");
+        message.innerHTML = `
+        <div class="message__created">${at_created}</div>
+            <div class="message__text">${text}</div>
+`
+        message.classList.add("message")
+        root.appendChild(message);
+    }
+
+    const renderMessages = () => {
+        root.innerHTML = "";
+        messages.forEach(message => renderMessage(message));
+    }
+
+    const listMessages = () => {
+        fetch(`/api/comment_list/${book_id}`)
+            .then(response => (response.json()))
+            .then(response => {
+                messages = response.messages;
+                renderMessages();
+            })
+    }
+
+    listMessages();
+    setInterval(listMessages, 1000);
+
     const sendMessage = () => {
-        alert('Спасибо за отзыв!');
+        if (!can_send_message) return;
+        let text = messageTextInput.value;
+        can_send_message = false;
+        fetch("/api/comment_create", {
+            "method": "POST",
+            "headers": {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            "body": JSON.stringify({
+                "text": text,
+                "book": `{{context.id}}`
+            })
+        })
+            .then(data => (data.json()))
+            .then(data => {
+                return data;
+            })
+            .then(data => {
+                messages.unshift(data.message);
+                renderMessages();
+                can_send_message = true;
+            })
+        messageTextInput.value = "";
     }
 </script>
 </html>
